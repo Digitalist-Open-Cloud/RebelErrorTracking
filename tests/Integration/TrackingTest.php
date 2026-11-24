@@ -151,6 +151,9 @@ class TrackingTest extends IntegrationTestCase
         $this->assertEquals(1, $visits('errorType==promise'));
         $this->assertEquals(2, $visits('errorType==js'));
         $this->assertEquals(2, $visits('errorType!='), 'visits with an error');
+
+        $this->trackError($this->startVisit(1), ['ret_m' => "Can't read <price> & more"]);
+        $this->assertEquals(1, $visits("errorMessage=@Can't read <price> &"), 'a message with characters that are stored encoded');
         $this->assertEquals(1, $visits('errorType=='), 'visits without an error');
     }
 
@@ -231,6 +234,7 @@ class TrackingTest extends IntegrationTestCase
         // The table of Matomo opens a row by this ID when a row has one.
         $this->assertFalse($api->getErrors(1, 'day', self::DAY)->getFirstRow()->getMetadata('idsubdatatable_in_db'));
         $this->assertSame($idVisit, $occurrence->getColumn('idvisit'));
+        $this->assertStringStartsWith('http', $occurrence->getMetadata('url'));
         $this->assertStringContainsString('date=' . self::DAY, $occurrence->getMetadata('url'));
         $this->assertStringEndsWith('subcategory=Live_VisitorLog&segment=visitId%3D%3D' . $idVisit, $occurrence->getMetadata('url'));
     }
@@ -254,6 +258,8 @@ class TrackingTest extends IntegrationTestCase
 
         require_once PIWIK_INCLUDE_PATH . '/plugins/RebelErrorTracking/Updates/5.1.0.php';
         $updater = new Updater();
+        (new Updates_5_1_0(StaticContainer::get(MigrationFactory::class)))->doUpdate($updater);
+        // It can run again on tables that are already updated.
         (new Updates_5_1_0(StaticContainer::get(MigrationFactory::class)))->doUpdate($updater);
 
         $this->assertSame(

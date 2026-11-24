@@ -20,6 +20,7 @@ use Piwik\Period\Range;
 use Piwik\Piwik;
 use Piwik\Plugins\RebelErrorTracking\Dao\LogError;
 use Piwik\Plugins\RebelErrorTracking\RecordBuilders\Errors;
+use Piwik\SettingsPiwik;
 use Piwik\Site;
 
 require_once PIWIK_INCLUDE_PATH . '/plugins/DevicesDetection/functions.php';
@@ -193,8 +194,9 @@ class API extends \Piwik\Plugin\API
             $time = Date::factory($error['server_time'], $timezone);
             $day = $time->toString('Y-m-d');
             $table->addRow(new Row([Row::METADATA => [
-                // The visit the error happened in, in the visit log.
-                'url' => 'index.php?module=CoreHome&action=index&idSite=' . $idSite . '&period=day&date=' . $day
+                // The visit the error happened in, in the visit log. The table of Matomo links to a
+                // full address only.
+                'url' => SettingsPiwik::getPiwikUrl() . 'index.php?module=CoreHome&action=index&idSite=' . $idSite . '&period=day&date=' . $day
                     . '#?idSite=' . $idSite . '&period=day&date=' . $day
                     . '&category=General_Visitors&subcategory=Live_VisitorLog&segment=visitId%3D%3D' . (int) $error['idvisit'],
             ], Row::COLUMNS => [

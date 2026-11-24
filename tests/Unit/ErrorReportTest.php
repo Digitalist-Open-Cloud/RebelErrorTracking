@@ -73,6 +73,29 @@ class ErrorReportTest extends TestCase
         }
     }
 
+    public function testAddressesInAStackTraceAreStoredWithoutWhatFollowsTheQuestionMark()
+    {
+        $error = ErrorReport::fromRequestParams([
+            'ret_t' => 'js',
+            'ret_m' => "Unexpected token '?'",
+            'ret_k' => "Error: Boom\n"
+                . "    at run (https://example.org/app.js?token=secret&v=3:12:34)\n"
+                . "    at https://example.org/lib.js#part:5:6\n"
+                . "load@https://example.org/old.js?session=abc:7:8\n"
+                . "    at plain (https://example.org/plain.js:1:2)",
+        ]);
+
+        $this->assertSame(
+            "Error: Boom\n"
+            . "    at run (https://example.org/app.js:12:34)\n"
+            . "    at https://example.org/lib.js:5:6\n"
+            . "load@https://example.org/old.js:7:8\n"
+            . "    at plain (https://example.org/plain.js:1:2)",
+            $error['stack']
+        );
+        $this->assertSame('Unexpected token &#039;?&#039;', $error['message']);
+    }
+
     public function testTextsAreCutAndNumbersAreKeptInRange()
     {
         $error = ErrorReport::fromRequestParams([

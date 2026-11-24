@@ -55,7 +55,7 @@ class ErrorReport
             'source' => Common::sanitizeInputValue($source),
             'line_number' => self::number($params['ret_l'] ?? 0),
             'column_number' => self::number($params['ret_c'] ?? 0),
-            'stack' => self::encodeLines(self::text($params['ret_k'] ?? '', self::MAX_STACK)),
+            'stack' => self::encodeLines(self::withoutQueries(self::text($params['ret_k'] ?? '', self::MAX_STACK))),
             'page_url' => Common::sanitizeInputValue(self::address($params['url'] ?? '')),
         ];
     }
@@ -68,6 +68,14 @@ class ErrorReport
         $pattern = '/[0-9a-f]{8,}|[0-9]+/i';
 
         return md5($type . '|' . preg_replace($pattern, '0', $message) . '|' . preg_replace($pattern, '0', $source));
+    }
+
+    /**
+     * The addresses in a stack trace without what follows ? and #, up to the line and column.
+     */
+    private static function withoutQueries(string $stack): string
+    {
+        return preg_replace('~(https?://[^\s?#)]+)[?#][^\s)]*?(?=(?::\d+){0,2}\)?(?:\s|$))~', '$1', $stack);
     }
 
     /**
