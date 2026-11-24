@@ -46,14 +46,27 @@ The tracker sends what the snippet collected when it is loaded.
 **Errors** in the reporting menu has three reports for the chosen website and period:
 
 - **Errors over time**: the number of errors, or of visits with an error, as a graph.
-- **Errors**: one row for each error, with how many times it happened, in how many visits, and
-  when it was last seen. Errors that differ only in numbers and IDs count as the same error.
+- **Errors**: one row for each error, with how many times it happened, in how many visits, the
+  browsers it happened most in, and when it was last seen. Errors that differ only in numbers and IDs count as the same error.
   Click a row to see its latest occurrences: the time, the page, the browser and operating
   system, the place in the code and the stack trace.
 - **Errors by browser**: the browsers and versions the errors happened in.
 
 The browser comes from the visit an error belongs to, so the reports can also be narrowed with a
 segment, such as one browser, one country or one page.
+
+## Segments and the visit log
+
+The plugin adds three segments: **Error type**, **Error message** and **Error file**. A segment
+narrows any report of Matomo to the visits that match, so the visits with a certain error can be
+compared with the others. `errorType!=` with nothing after it is the visits with any error, and
+`errorType==` the visits without one.
+
+The visit log and the visitor profile show the errors of a visit among its page views.
+
+The three are also dimensions, for plugins that build reports from dimensions.
+
+## When the reports are built
 
 The reports are built when Matomo archives, like its other reports: an error shows up the next
 time the reports of the day are processed.

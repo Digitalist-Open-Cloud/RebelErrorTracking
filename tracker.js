@@ -102,8 +102,8 @@
   }
 
   function onPolicyViolation(event) {
-      var message = 'Content Security Policy: ' + (event.effectiveDirective || event.violatedDirective)
-          + (event.disposition === 'report' ? ' (report only)' : '');
+      var message = (event.disposition === 'report' ? 'Would be blocked by ' : 'Blocked by ')
+          + (event.effectiveDirective || event.violatedDirective);
       var stack = event.sourceFile ? 'at ' + event.sourceFile + ':' + event.lineNumber + ':' + event.columnNumber : '';
       report('csp', message, event.blockedURI, event.lineNumber, event.columnNumber, stack);
   }

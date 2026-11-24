@@ -90,6 +90,26 @@ class LogError
         );
     }
 
+    /**
+     * @param array<int|string> $idVisits
+     * @return array<int, array<string, mixed>>
+     */
+    public function getErrorsOfVisits(array $idVisits): array
+    {
+        $idVisits = array_map('intval', $idVisits);
+        if (!$idVisits) {
+            return [];
+        }
+
+        return Db::fetchAll(
+            'SELECT idvisit, server_time, type, message, source, line_number, column_number
+               FROM ' . $this->table() . '
+              WHERE idvisit IN (' . Common::getSqlStringFieldsArray($idVisits) . ')
+              ORDER BY idlog',
+            $idVisits
+        );
+    }
+
     public function deleteOlderThan(string $time): void
     {
         Db::query('DELETE FROM ' . $this->table() . ' WHERE server_time < ?', [$time]);

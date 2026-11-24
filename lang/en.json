@@ -1,6 +1,7 @@
 {
     "RebelErrorTracking": {
         "ColumnBrowser": "Browser",
+        "ColumnBrowsers": "Most in",
         "ColumnErrors": "Errors",
         "ColumnLastSeen": "Last seen",
         "ColumnLocation": "Location",
@@ -11,6 +12,12 @@
         "ColumnTime": "Time",
         "ColumnType": "Type",
         "ColumnVisitsWithErrors": "Visits with errors",
+        "DimensionMessage": "Error message",
+        "DimensionMessages": "Error messages",
+        "DimensionSource": "Error file",
+        "DimensionSources": "Error files",
+        "DimensionType": "Error type",
+        "DimensionTypes": "Error types",
         "ErrorRetentionRange": "Enter a number of days between %1$s and %2$s.",
         "ErrorTooManyIgnored": "Enter at most %1$s lines.",
         "Errors": "Errors",

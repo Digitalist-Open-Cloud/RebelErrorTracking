@@ -13,3 +13,6 @@
 - A snippet for the page collects the errors that happen before the tracker is loaded.
 - A setting for each website with texts of errors to ignore.
 - An error that happens before the tracker knows its website waits for it, as with a tag manager.
+- The report "Errors" shows the browsers each error happened most in.
+- The segments "Error type", "Error message" and "Error file", to narrow any report to the visits with an error.
+- The visit log shows the errors of a visit.

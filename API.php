@@ -31,6 +31,7 @@ require_once PIWIK_INCLUDE_PATH . '/plugins/DevicesDetection/functions.php';
 class API extends \Piwik\Plugin\API
 {
     private const MAX_OCCURRENCES = 20;
+    private const MAX_BROWSERS_SHOWN = 3;
 
     /**
      * The number of errors and of visits with an error in a period.
@@ -62,7 +63,7 @@ class API extends \Piwik\Plugin\API
     }
 
     /**
-     * The errors of a period, the same error counted as one row.
+     * The errors of a period, the same error counted as one row, with the browsers it happened most in.
      *
      * @param int|string $idSite
      * @param string $period
@@ -74,7 +75,7 @@ class API extends \Piwik\Plugin\API
     {
         Piwik::checkUserHasViewAccess($idSite);
 
-        $table = Archive::createDataTableFromArchive(Errors::RECORD, $idSite, $period, $date, $segment);
+        $table = Archive::createDataTableFromArchive(Errors::RECORD, $idSite, $period, $date, $segment, true);
         $table->filter(function (DataTable $table) {
             $site = $table->getMetadata('site');
             $timezone = $site ? $site->getTimezone() : 'UTC';
@@ -92,6 +93,8 @@ class API extends \Piwik\Plugin\API
                 $row->setColumn('label', $message);
                 $row->setColumn('type', Piwik::translate('RebelErrorTracking_Type_' . $row->getMetadata('type')));
                 $row->setColumn('source', $row->getMetadata('source'));
+                $row->setColumn('browsers', $this->getMostFrequentBrowsers($row->getSubtable()));
+                $row->removeSubtable();
                 $row->setColumn('last_seen', Date::factory((int) $row->getColumn('last_seen'), $timezone)->getDatetime());
                 $row->setNonLoadedSubtableId((int) $row->getColumn('max_idlog'));
                 $row->deleteColumn('max_idlog');
@@ -160,6 +163,37 @@ class API extends \Piwik\Plugin\API
         }
 
         return $table;
+    }
+
+    /**
+     * The browsers an error happened most in, as "Firefox 120.0 (12), Safari 17.1 (3), +2".
+     *
+     * @param DataTable|false $browsers
+     */
+    private function getMostFrequentBrowsers($browsers): string
+    {
+        if (!$browsers) {
+            return '';
+        }
+
+        $counts = [];
+        foreach ($browsers->getRowsWithoutSummaryRow() as $row) {
+            $counts[\Piwik\Plugins\DevicesDetection\getBrowserNameWithVersion($row->getColumn('label'))] = (int) $row->getColumn('nb_errors');
+        }
+        ksort($counts);
+        arsort($counts);
+
+        $shown = [];
+        foreach (array_slice($counts, 0, self::MAX_BROWSERS_SHOWN, true) as $name => $count) {
+            $shown[] = $name . ' (' . $count . ')';
+        }
+        // The browsers beyond the ones that are archived for an error count as one.
+        $more = count($counts) - count($shown) + ($browsers->getSummaryRow() ? 1 : 0);
+        if ($more > 0) {
+            $shown[] = '+' . $more;
+        }
+
+        return implode(', ', $shown);
     }
 
     /**
