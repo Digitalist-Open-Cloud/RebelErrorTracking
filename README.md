@@ -43,14 +43,19 @@ The tracker sends what the snippet collected when it is loaded.
 
 ## Reports
 
-**Errors** in the reporting menu has three reports for the chosen website and period:
+**Errors** in the reporting menu has these reports for the chosen website and period:
 
-- **Errors over time**: the number of errors, or of visits with an error, as a graph.
+- **Errors over time**: a graph of the errors, the new errors, the visits with an error, or the
+  error rate: the share of all visits that had an error.
+- **Errors in numbers**: the same four for the period.
 - **Errors**: one row for each error, with how many times it happened, in how many visits, the
-  browsers it happened most in, and when it was last seen. Errors that differ only in numbers and IDs count as the same error.
+  browsers it happened most in, and when it was first and last seen. An error that was first
+  seen in the period is marked as new. Errors that differ only in numbers and IDs count as the same error.
   Click a row to see its latest occurrences: the time, the page, the browser and operating
-  system, the place in the code and the stack trace.
+  system, the place in the code and the stack trace. The time links to the visit in the visit
+  log.
 - **Errors by browser**: the browsers and versions the errors happened in.
+- **Errors by page**: the pages the errors happened on.
 
 The browser comes from the visit an error belongs to, so the reports can also be narrowed with a
 segment, such as one browser, one country or one page.
@@ -71,7 +76,7 @@ The three are also dimensions, for plugins that build reports from dimensions.
 The reports are built when Matomo archives, like its other reports: an error shows up the next
 time the reports of the day are processed.
 
-In the API they are `RebelErrorTracking.get`, `getErrors`, `getOccurrences` and `getBrowsers`.
+In the API they are `RebelErrorTracking.get`, `getErrors`, `getOccurrences`, `getBrowsers` and `getPages`.
 The occurrences are read from the stored errors: they do not follow a segment, and they are gone
 when the errors are deleted, while the counts stay.
 

@@ -10,6 +10,7 @@
 namespace Piwik\Plugins\RebelErrorTracking;
 
 use Piwik\Archive;
+use Piwik\Common;
 use Piwik\DataTable;
 use Piwik\DataTable\Row;
 use Piwik\Date;
@@ -34,7 +35,8 @@ class API extends \Piwik\Plugin\API
     private const MAX_BROWSERS_SHOWN = 3;
 
     /**
-     * The number of errors and of visits with an error in a period.
+     * The totals of a period: the errors, the errors that were seen for the first time, the visits
+     * with an error, and the share of all visits they are.
      *
      * @param int|string $idSite
      * @param string $period
@@ -48,11 +50,14 @@ class API extends \Piwik\Plugin\API
         Piwik::checkUserHasViewAccess($idSite);
 
         $table = Archive::build($idSite, $period, $date, $segment)
-            ->getDataTableFromNumeric([Errors::NB_ERRORS, Errors::NB_VISITS]);
+            ->getDataTableFromNumeric([Errors::NB_ERRORS, Errors::NB_NEW_ERRORS, Errors::NB_VISITS, 'nb_visits']);
         $table->filter('ReplaceColumnNames', [[
             Errors::NB_ERRORS => 'nb_errors',
+            Errors::NB_NEW_ERRORS => 'nb_new_errors',
             Errors::NB_VISITS => 'nb_visits_with_errors',
         ]]);
+        $table->filter('ColumnCallbackAddColumnPercentage', ['error_rate', 'nb_visits_with_errors', 'nb_visits', 1]);
+        $table->filter('ColumnDelete', [['nb_visits']]);
 
         $columns = Piwik::getArrayFromApiParameter($columns);
         if ($columns) {
@@ -63,7 +68,8 @@ class API extends \Piwik\Plugin\API
     }
 
     /**
-     * The errors of a period, the same error counted as one row, with the browsers it happened most in.
+     * The errors of a period, the same error counted as one row, with the browsers it happened most in
+     * and when it was first seen. `is_new` is 1 for an error that was first seen in the period.
      *
      * @param int|string $idSite
      * @param string $period
@@ -79,6 +85,8 @@ class API extends \Piwik\Plugin\API
         $table->filter(function (DataTable $table) {
             $site = $table->getMetadata('site');
             $timezone = $site ? $site->getTimezone() : 'UTC';
+            $period = $table->getMetadata('period');
+            $periodStart = $period ? strtotime($period->getDateStart()->setTimezone($timezone)->getDateStartUTC() . ' UTC') : 0;
 
             foreach ($table->getRows() as $row) {
                 $message = $row->getMetadata('message');
@@ -86,6 +94,7 @@ class API extends \Piwik\Plugin\API
                     // The row that sums up the errors beyond the most frequent ones.
                     $row->setColumn('label', Piwik::translate('General_Others'));
                     $row->deleteColumn('last_seen');
+                    $row->deleteColumn('first_seen');
                     $row->deleteColumn('max_idlog');
                     continue;
                 }
@@ -94,8 +103,15 @@ class API extends \Piwik\Plugin\API
                 $row->setColumn('type', Piwik::translate('RebelErrorTracking_Type_' . $row->getMetadata('type')));
                 $row->setColumn('source', $row->getMetadata('source'));
                 $row->setColumn('browsers', $this->getMostFrequentBrowsers($row->getSubtable()));
+                // The row opens its occurrences, not the browsers that are archived under it.
                 $row->removeSubtable();
+                $row->deleteMetadata('idsubdatatable_in_db');
                 $row->setColumn('last_seen', Date::factory((int) $row->getColumn('last_seen'), $timezone)->getDatetime());
+                $firstSeen = (int) $row->getColumn('first_seen');
+                if ($firstSeen) {
+                    $row->setColumn('first_seen', Date::factory($firstSeen, $timezone)->getDatetime());
+                    $row->setColumn('is_new', (int) ($periodStart && $firstSeen >= $periodStart));
+                }
                 $row->setNonLoadedSubtableId((int) $row->getColumn('max_idlog'));
                 $row->deleteColumn('max_idlog');
                 foreach (['message', 'type', 'source'] as $name) {
@@ -103,6 +119,27 @@ class API extends \Piwik\Plugin\API
                 }
             }
         });
+
+        return $table;
+    }
+
+    /**
+     * The errors of a period by the page they happened on.
+     *
+     * @param int|string $idSite
+     * @param string $period
+     * @param string $date
+     * @param string|false $segment
+     * @return DataTable|DataTable\Map
+     */
+    public function getPages($idSite, $period, $date, $segment = false)
+    {
+        Piwik::checkUserHasViewAccess($idSite);
+
+        $table = Archive::createDataTableFromArchive(Errors::PAGES, $idSite, $period, $date, $segment);
+        $table->filter('ColumnCallbackAddMetadata', ['label', 'url', function ($label) {
+            return preg_match('#^https?://#i', (string) $label) ? Common::unsanitizeInputValue($label) : false;
+        }]);
 
         return $table;
     }
@@ -153,8 +190,16 @@ class API extends \Piwik\Plugin\API
                 $location .= ':' . $error['line_number'] . ':' . $error['column_number'];
             }
 
-            $table->addRow(new Row([Row::COLUMNS => [
-                'label' => Date::factory($error['server_time'], $timezone)->getDatetime(),
+            $time = Date::factory($error['server_time'], $timezone);
+            $day = $time->toString('Y-m-d');
+            $table->addRow(new Row([Row::METADATA => [
+                // The visit the error happened in, in the visit log.
+                'url' => 'index.php?module=CoreHome&action=index&idSite=' . $idSite . '&period=day&date=' . $day
+                    . '#?idSite=' . $idSite . '&period=day&date=' . $day
+                    . '&category=General_Visitors&subcategory=Live_VisitorLog&segment=visitId%3D%3D' . (int) $error['idvisit'],
+            ], Row::COLUMNS => [
+                'label' => $time->getDatetime(),
+                'idvisit' => (int) $error['idvisit'],
                 'page_url' => $error['page_url'],
                 'browser' => $this->getBrowserAndSystem($error),
                 'location' => $location,

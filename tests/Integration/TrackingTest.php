@@ -19,7 +19,10 @@ use Piwik\Plugins\RebelErrorTracking\API as ErrorsApi;
 use Piwik\Plugins\RebelErrorTracking\Dao\LogError;
 use Piwik\Plugins\RebelErrorTracking\MeasurableSettings;
 use Piwik\Plugins\RebelErrorTracking\Tasks;
+use Piwik\Plugins\RebelErrorTracking\Updates_5_1_0;
 use Piwik\Plugins\VisitsSummary\API as VisitsSummaryApi;
+use Piwik\Updater;
+use Piwik\Updater\Migration\Factory as MigrationFactory;
 use Piwik\Tests\Framework\Fixture;
 use Piwik\Tests\Framework\TestCase\IntegrationTestCase;
 
@@ -169,6 +172,94 @@ class TrackingTest extends IntegrationTestCase
         }
 
         $this->assertSame([['JavaScript', 'Boom', 'http://example.org/app.js:7:3']], $errors);
+    }
+
+    public function testAnErrorIsNewInThePeriodItWasFirstSeenIn()
+    {
+        $this->trackError($this->startVisit(1, '2024-03-04'), ['ret_m' => 'Boom']);
+        $this->trackError($this->startVisit(1), ['ret_m' => 'Boom']);
+        $this->trackError($this->startVisit(1), ['ret_m' => 'Bang']);
+
+        $api = ErrorsApi::getInstance();
+        $second = $api->getErrors(1, 'day', self::DAY);
+        $this->assertSame('2024-03-04 10:01:00', $second->getRowFromLabel('Boom')->getColumn('first_seen'));
+        $this->assertSame(0, $second->getRowFromLabel('Boom')->getColumn('is_new'));
+        $this->assertSame(1, $second->getRowFromLabel('Bang')->getColumn('is_new'));
+        $this->assertSame(1, $api->getErrors(1, 'day', '2024-03-04')->getRowFromLabel('Boom')->getColumn('is_new'));
+        $this->assertSame(1, $api->getErrors(1, 'week', self::DAY)->getRowFromLabel('Boom')->getColumn('is_new'));
+        $this->assertSame('2024-03-04 10:01:00', $api->getErrors(1, 'week', self::DAY)->getRowFromLabel('Boom')->getColumn('first_seen'));
+
+        $this->assertEquals(1, $api->get(1, 'day', '2024-03-04')->getFirstRow()->getColumn('nb_new_errors'));
+        $this->assertEquals(1, $api->get(1, 'day', self::DAY)->getFirstRow()->getColumn('nb_new_errors'));
+        $this->assertEquals(2, $api->get(1, 'week', self::DAY)->getFirstRow()->getColumn('nb_new_errors'));
+    }
+
+    public function testTheShareOfVisitsWithAnErrorIsReported()
+    {
+        $this->trackError($this->startVisit(1), ['ret_m' => 'Boom']);
+        $this->startVisit(1);
+        $this->startVisit(1);
+        $this->startVisit(1);
+
+        $this->assertSame('25%', ErrorsApi::getInstance()->get(1, 'day', self::DAY)->getFirstRow()->getColumn('error_rate'));
+        $this->assertSame('25%', ErrorsApi::getInstance()->get(1, 'day', self::DAY, false, 'error_rate')->getFirstRow()->getColumn('error_rate'));
+    }
+
+    public function testErrorsAreReportedByThePageTheyHappenedOn()
+    {
+        $tracker = $this->startVisit(1);
+        $this->trackError($tracker, ['ret_m' => 'Boom']);
+        $this->trackError($tracker, ['ret_m' => 'Bang']);
+        $tracker->setUrl('http://example.org/cart#items');
+        $this->trackError($tracker, ['ret_m' => 'Boom']);
+
+        $pages = ErrorsApi::getInstance()->getPages(1, 'day', self::DAY);
+
+        $this->assertSame(['http://example.org/shop', 'http://example.org/cart'], $pages->getColumn('label'));
+        $this->assertEquals([2, 1], $pages->getColumn('nb_errors'));
+        $this->assertSame('http://example.org/shop', $pages->getFirstRow()->getMetadata('url'));
+    }
+
+    public function testAnOccurrenceLinksToItsVisitInTheVisitLog()
+    {
+        $this->trackError($this->startVisit(1), ['ret_m' => 'Boom']);
+        $idVisit = (int) Db::fetchOne('SELECT idvisit FROM ' . Common::prefixTable(LogError::TABLE));
+
+        $api = ErrorsApi::getInstance();
+        $occurrence = $api->getOccurrences(1, 'day', self::DAY, $api->getErrors(1, 'day', self::DAY)->getFirstRow()->getIdSubDataTable())->getFirstRow();
+
+        // The table of Matomo opens a row by this ID when a row has one.
+        $this->assertFalse($api->getErrors(1, 'day', self::DAY)->getFirstRow()->getMetadata('idsubdatatable_in_db'));
+        $this->assertSame($idVisit, $occurrence->getColumn('idvisit'));
+        $this->assertStringContainsString('date=' . self::DAY, $occurrence->getMetadata('url'));
+        $this->assertStringEndsWith('subcategory=Live_VisitorLog&segment=visitId%3D%3D' . $idVisit, $occurrence->getMetadata('url'));
+    }
+
+    public function testAnErrorThatNoLongerHappensIsNewWhenItComesBack()
+    {
+        $this->trackError($this->startVisit(1, gmdate('Y-m-d', time() - 200 * 86400)), ['ret_m' => 'Old']);
+        $this->trackError($this->startVisit(1, gmdate('Y-m-d', time() - 5 * 86400)), ['ret_m' => 'Recent']);
+
+        (new Tasks())->deleteOldErrors();
+
+        $this->assertEquals(1, Db::fetchOne('SELECT COUNT(*) FROM ' . Common::prefixTable(LogError::FIRST_SEEN_TABLE)));
+    }
+
+    public function testTheUpdateFillsInWhenTheStoredErrorsWereFirstSeen()
+    {
+        $this->trackError($this->startVisit(1, '2024-03-04'), ['ret_m' => 'Boom']);
+        $this->trackError($this->startVisit(1), ['ret_m' => 'Boom']);
+        Db::query('DROP TABLE ' . Common::prefixTable(LogError::FIRST_SEEN_TABLE));
+        Db::query('ALTER TABLE ' . Common::prefixTable(LogError::TABLE) . ' DROP INDEX site_fingerprint');
+
+        require_once PIWIK_INCLUDE_PATH . '/plugins/RebelErrorTracking/Updates/5.1.0.php';
+        $updater = new Updater();
+        (new Updates_5_1_0(StaticContainer::get(MigrationFactory::class)))->doUpdate($updater);
+
+        $this->assertSame(
+            ['2024-03-04 10:01:00'],
+            array_column(Db::fetchAll('SELECT first_seen FROM ' . Common::prefixTable(LogError::FIRST_SEEN_TABLE)), 'first_seen')
+        );
     }
 
     public function testARequestWithoutAUsableErrorStoresNothing()

@@ -16,3 +16,7 @@
 - The report "Errors" shows the browsers each error happened most in.
 - The segments "Error type", "Error message" and "Error file", to narrow any report to the visits with an error.
 - The visit log shows the errors of a visit.
+- When an error was first seen, a mark on the errors that are new in the period, and the number of new errors.
+- The error rate: the share of visits with an error.
+- The report "Errors by page" and the numbers of the period as "Errors in numbers".
+- The time of an occurrence links to its visit in the visit log.

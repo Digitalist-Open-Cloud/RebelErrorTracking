@@ -9,6 +9,7 @@
 
 namespace Piwik\Plugins\RebelErrorTracking\Reports;
 
+use Piwik\DataTable;
 use Piwik\Piwik;
 use Piwik\Plugin\Report;
 use Piwik\Plugin\ViewDataTable;
@@ -40,18 +41,30 @@ class GetErrors extends Report
 
     public function configureView(ViewDataTable $view)
     {
-        $view->config->columns_to_display = ['label', 'type', 'source', 'browsers', 'nb_errors', 'nb_visits', 'last_seen'];
+        $view->config->columns_to_display = ['label', 'type', 'source', 'browsers', 'nb_errors', 'nb_visits', 'first_seen', 'last_seen'];
         $view->config->addTranslations([
             'label' => Piwik::translate('RebelErrorTracking_ColumnMessage'),
             'type' => Piwik::translate('RebelErrorTracking_ColumnType'),
             'source' => Piwik::translate('RebelErrorTracking_ColumnSource'),
             'browsers' => Piwik::translate('RebelErrorTracking_ColumnBrowsers'),
             'nb_errors' => Piwik::translate('RebelErrorTracking_ColumnErrors'),
+            'first_seen' => Piwik::translate('RebelErrorTracking_ColumnFirstSeen'),
             'last_seen' => Piwik::translate('RebelErrorTracking_ColumnLastSeen'),
         ]);
 
         $view->requestConfig->filter_sort_column = 'nb_errors';
         $view->requestConfig->filter_sort_order = 'desc';
+
+        // The day is enough in the table, and an error that was first seen in the period is marked as new.
+        $new = Piwik::translate('RebelErrorTracking_New');
+        $view->config->filters[] = function (DataTable $table) use ($new) {
+            foreach ($table->getRows() as $row) {
+                $firstSeen = $row->getColumn('first_seen');
+                if ($firstSeen) {
+                    $row->setColumn('first_seen', substr($firstSeen, 0, 10) . ($row->getColumn('is_new') ? ' · ' . $new : ''));
+                }
+            }
+        };
 
         $view->config->show_all_views_icons = false;
         $view->config->show_exclude_low_population = false;
