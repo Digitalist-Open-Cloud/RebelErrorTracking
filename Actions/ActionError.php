@@ -25,7 +25,7 @@ class ActionError extends Action
 {
     public const TYPE_ERROR = 87;
 
-    private const MAX_ERRORS_PER_VISIT = 100;
+    public const MAX_ERRORS_PER_VISIT = 100;
 
     public function __construct(Request $request)
     {

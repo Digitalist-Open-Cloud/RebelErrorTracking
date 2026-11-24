@@ -80,6 +80,11 @@ In the API they are `RebelErrorTracking.get`, `getErrors`, `getOccurrences`, `ge
 The occurrences are read from the stored errors: they do not follow a segment, and they are gone
 when the errors are deleted, while the counts stay.
 
+## Documentation in Matomo
+
+**Administration > System > Error tracking documentation** tells users with view access what is
+tracked, how to read the reports and how to use the segments.
+
 ## Settings
 
 For each website, under its settings:

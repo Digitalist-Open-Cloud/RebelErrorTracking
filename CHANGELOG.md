@@ -20,6 +20,7 @@
 - The error rate: the share of visits with an error.
 - The report "Errors by page" and the numbers of the period as "Errors in numbers".
 - The time of an occurrence links to its visit in the visit log.
+- A documentation page in Matomo, under Administration.
 
 ### Fixed
 

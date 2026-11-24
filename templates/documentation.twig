@@ -1,0 +1,65 @@
+{% extends 'admin.twig' %}
+
+{% set title %}{{ 'RebelErrorTracking_Documentation'|translate }}{% endset %}
+
+{% block content %}
+<div class="card rebelErrorTrackingDocumentation">
+    <div class="card-content">
+        <h2 class="card-title">{{ 'RebelErrorTracking_Documentation'|translate }}</h2>
+        <p>{{ 'RebelErrorTracking_DocIntro'|translate }}</p>
+
+        <h3>{{ 'RebelErrorTracking_DocCaptureTitle'|translate }}</h3>
+        <p>{{ 'RebelErrorTracking_DocCapture'|translate }}</p>
+
+        <h3>{{ 'RebelErrorTracking_DocStartTitle'|translate }}</h3>
+        <p>{{ 'RebelErrorTracking_DocStart'|translate }}</p>
+        <pre>./console custom-matomo-js:update</pre>
+
+        <h3>{{ 'RebelErrorTracking_DocEarlyTitle'|translate }}</h3>
+        <p>{{ 'RebelErrorTracking_DocEarly'|translate }}</p>
+        <pre>&lt;script&gt;
+window.rebelErrorQueue = [];
+addEventListener('error', function (e) { rebelErrorQueue.push(e); }, true);
+addEventListener('unhandledrejection', function (e) { rebelErrorQueue.push(e); });
+addEventListener('securitypolicyviolation', function (e) { rebelErrorQueue.push(e); });
+&lt;/script&gt;</pre>
+
+        <h3>{{ 'RebelErrorTracking_DocReportsTitle'|translate }}</h3>
+        <p>{{ 'RebelErrorTracking_DocReports'|translate }}</p>
+
+        <h3>{{ 'RebelErrorTracking_DocSameTitle'|translate }}</h3>
+        <p>{{ 'RebelErrorTracking_DocSame'|translate }}</p>
+
+        <h3>{{ 'RebelErrorTracking_DocSegmentsTitle'|translate }}</h3>
+        <p>{{ 'RebelErrorTracking_DocSegments'|translate }}</p>
+        <pre>errorType!=              visits with an error
+errorType==              visits without an error
+errorType==promise       visits with an unhandled promise rejection
+errorMessage=@checkout   visits with an error whose message contains "checkout"
+errorSource=@vendor      visits with an error in a file whose address contains "vendor"</pre>
+
+        <h3>{{ 'RebelErrorTracking_DocDelayTitle'|translate }}</h3>
+        <p>{{ 'RebelErrorTracking_DocDelay'|translate }}</p>
+
+        <h3>{{ 'RebelErrorTracking_DocSettingsTitle'|translate }}</h3>
+        <p>{{ 'RebelErrorTracking_DocSettings'|translate(retentionDays) }}</p>
+
+        <h3>{{ 'RebelErrorTracking_DocStoredTitle'|translate }}</h3>
+        <p>{{ 'RebelErrorTracking_DocStored'|translate(maxPerPageLoad, maxPerVisit) }}</p>
+
+        <h3>{{ 'RebelErrorTracking_DocOtherDomainsTitle'|translate }}</h3>
+        <p>{{ 'RebelErrorTracking_DocOtherDomains'|translate }}</p>
+        <pre>&lt;script src="https://cdn.example/app.js" crossorigin="anonymous"&gt;&lt;/script&gt;
+
+Access-Control-Allow-Origin: *</pre>
+
+        <h3>{{ 'RebelErrorTracking_DocApiTitle'|translate }}</h3>
+        <p>{{ 'RebelErrorTracking_DocApi'|translate }}</p>
+        <pre>RebelErrorTracking.get
+RebelErrorTracking.getErrors
+RebelErrorTracking.getOccurrences
+RebelErrorTracking.getBrowsers
+RebelErrorTracking.getPages</pre>
+    </div>
+</div>
+{% endblock %}

@@ -7,6 +7,11 @@
     text-align: left !important;
   }
 
+  // Rows are several lines high, and read best with their cells centred on each other.
+  td {
+    vertical-align: middle;
+  }
+
   // The file and the browsers are long: they wrap, so that the table fits the page.
   td:nth-child(3), td:nth-child(4) {
     white-space: normal !important;
@@ -60,5 +65,17 @@
   .rebelErrorTrackingLocation {
     display: block;
     color: @theme-color-text-light;
+  }
+}
+
+.rebelErrorTrackingDocumentation {
+  max-width: 60em;
+
+  h3 {
+    margin-top: 1.5em;
+  }
+
+  pre {
+    white-space: pre-wrap;
   }
 }
