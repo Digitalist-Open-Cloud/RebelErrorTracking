@@ -1,22 +1,35 @@
 import { assertEquals } from "jsr:@std/assert@1";
 
 // Runs tracker.js in a faked browser. Returns what to fire events with and the requests sent.
-function load({ siteId = 1, loadedBefore = false } = {}) {
+function load({ siteId = 1, loadedBefore = false, queue, observer = false } = {}) {
   const listeners = {};
   const requests = [];
+  const timers = [];
+  const env = { siteId, requests };
   const tracker = {
-    getSiteId: () => siteId,
+    getSiteId: () => env.siteId,
     getTrackerUrl: () => "https://m.example/matomo.php",
     trackRequest: (request) => requests.push(new URLSearchParams(request)),
   };
   const window = {
     rebelErrorTrackingLoaded: loadedBefore,
+    rebelErrorQueue: queue,
     addEventListener: (type, listener) => { listeners[type] = listener; },
     Matomo: { getAsyncTrackers: () => [tracker] },
   };
+  if (observer) {
+    window.ReportingObserver = function (callback, options) {
+      env.observed = options;
+      this.observe = () => { env.browserReports = callback; };
+    };
+  }
   const src = Deno.readTextFileSync(new URL("../../tracker.js", import.meta.url));
-  new Function("window", src)(window);
-  return { window, requests, fire: (type, event) => listeners[type] && listeners[type](event) };
+  new Function("window", "setTimeout", src)(window, (callback) => timers.push(callback));
+  env.window = window;
+  env.fire = (type, event) => listeners[type] && listeners[type](event);
+  // Lets the time pass that the script waits for a tracker.
+  env.wait = (times = 1) => { for (let i = 0; i < times && timers.length; i++) timers.shift()(); };
+  return env;
 }
 
 const jsError = (message, extra = {}) => ({
@@ -89,11 +102,76 @@ Deno.test("long texts are cut", () => {
   assertEquals(env.requests[0].get("ret_k").length, 2000);
 });
 
-Deno.test("nothing is sent to a tracker without a website", () => {
+Deno.test("an error waits for a tracker that knows its website", () => {
   const env = load({ siteId: "" });
   env.fire("error", jsError("Boom"));
-
+  env.fire("error", jsError("Bang"));
+  env.wait(3);
   assertEquals(env.requests.length, 0);
+
+  env.siteId = 7;
+  env.wait();
+  assertEquals(env.requests.map((r) => r.get("ret_m")), ["Boom", "Bang"]);
+});
+
+Deno.test("an error stops waiting when no tracker gets a website", () => {
+  const env = load({ siteId: "" });
+  env.fire("error", jsError("Boom"));
+  env.wait(100);
+
+  env.siteId = 7;
+  env.wait(100);
+  assertEquals(env.requests.length, 0);
+});
+
+Deno.test("the errors a snippet collected before the tracker was loaded are sent", () => {
+  const queue = [
+    jsError("Early error"),
+    { type: "unhandledrejection", reason: "Early rejection" },
+    { target: { tagName: "SCRIPT", src: "https://cdn.example/early.js" } },
+    { type: "securitypolicyviolation", effectiveDirective: "img-src", blockedURI: "https://cdn.example/x.png" },
+  ];
+  const env = load({ queue });
+
+  assertEquals(env.requests.map((r) => [r.get("ret_t"), r.get("ret_m")]), [
+    ["js", "Early error"],
+    ["promise", "Early rejection"],
+    ["resource", "Failed to load script"],
+    ["csp", "Content Security Policy: img-src"],
+  ]);
+
+  // The snippet keeps listening, what it collects from now on is not kept.
+  env.window.rebelErrorQueue.push(jsError("Later"));
+  assertEquals(env.requests.length, 4);
+});
+
+Deno.test("a Content Security Policy violation is sent with what was blocked", () => {
+  const env = load();
+  env.fire("securitypolicyviolation", {
+    effectiveDirective: "script-src-elem", blockedURI: "https://evil.example/x.js?id=1", disposition: "enforce",
+    sourceFile: "https://shop.example/", lineNumber: 4, columnNumber: 2,
+  });
+  env.fire("securitypolicyviolation", { violatedDirective: "img-src", blockedURI: "data", disposition: "report" });
+
+  assertEquals(Object.fromEntries(env.requests[0]), {
+    ca: "1", ret_t: "csp", ret_m: "Content Security Policy: script-src-elem", ret_s: "https://evil.example/x.js",
+    ret_l: "4", ret_c: "2", ret_k: "at https://shop.example/:4:2",
+  });
+  assertEquals(env.requests[1].get("ret_m"), "Content Security Policy: img-src (report only)");
+});
+
+Deno.test("what the browser reports about the page is sent", () => {
+  const env = load({ observer: true });
+  env.browserReports([
+    { type: "deprecation", body: { message: "Unload event listeners are deprecated", sourceFile: "https://shop.example/app.js", lineNumber: 3, columnNumber: 9 } },
+    { type: "intervention", body: { message: "Blocked a slow script" } },
+  ]);
+
+  assertEquals(env.observed, { types: ["deprecation", "intervention"], buffered: true });
+  assertEquals(env.requests.map((r) => [r.get("ret_t"), r.get("ret_m"), r.get("ret_s")]), [
+    ["browser", "deprecation: Unload event listeners are deprecated", "https://shop.example/app.js"],
+    ["browser", "intervention: Blocked a slow script", ""],
+  ]);
 });
 
 Deno.test("an event that can not be read does not throw", () => {

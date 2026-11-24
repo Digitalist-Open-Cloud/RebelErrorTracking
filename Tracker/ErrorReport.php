@@ -21,7 +21,10 @@ class ErrorReport
     public const TYPE_JS = 'js';
     public const TYPE_PROMISE = 'promise';
     public const TYPE_RESOURCE = 'resource';
-    public const TYPES = [self::TYPE_JS, self::TYPE_PROMISE, self::TYPE_RESOURCE];
+    public const TYPE_CSP = 'csp';
+    // What a browser says about the page: a feature that is deprecated, or something it stepped in to stop.
+    public const TYPE_BROWSER = 'browser';
+    public const TYPES = [self::TYPE_JS, self::TYPE_PROMISE, self::TYPE_RESOURCE, self::TYPE_CSP, self::TYPE_BROWSER];
 
     private const MAX_MESSAGE = 500;
     private const MAX_ADDRESS = 500;

@@ -10,6 +10,9 @@ A Matomo plugin that tracks the errors that happen in the browsers of your visit
 - JavaScript errors, with file, line, column and stack trace.
 - Promises that are rejected without being handled.
 - Images, scripts and stylesheets that fail to load.
+- Violations of the Content Security Policy of the website.
+- Optionally, what the browser reports about the website: deprecated features it uses, and
+  things the browser stopped it from doing.
 
 ## Install
 
@@ -21,6 +24,22 @@ tracking code of a website is needed. If Matomo can not write `matomo.js`, run:
 ```
 
 A website that loads the tracker through Matomo Tag Manager is covered too.
+
+## Errors before the tracker is loaded
+
+The tracker is loaded late, so an error thrown before it is not seen. To catch those too, put
+this first in the `<head>` of the website:
+
+```html
+<script>
+window.rebelErrorQueue = [];
+addEventListener('error', function (e) { rebelErrorQueue.push(e); }, true);
+addEventListener('unhandledrejection', function (e) { rebelErrorQueue.push(e); });
+addEventListener('securitypolicyviolation', function (e) { rebelErrorQueue.push(e); });
+</script>
+```
+
+The tracker sends what the snippet collected when it is loaded.
 
 ## Reports
 
@@ -45,7 +64,16 @@ when the errors are deleted, while the counts stay.
 
 ## Settings
 
-- **Track errors**, for each website under its settings. On by default.
+For each website, under its settings:
+
+- **Track errors**. On by default.
+- **Track browser warnings**. Off by default: Chromium-based browsers report a deprecated
+  feature for every page view that uses it.
+- **Errors to ignore**. One text on each line; an error whose message or file contains one of
+  them is not stored.
+
+For all websites:
+
 - **Days to keep errors**, under the system settings of the plugin. Older errors are deleted by a
   daily task.
 
