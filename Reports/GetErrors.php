@@ -13,6 +13,8 @@ use Piwik\Piwik;
 use Piwik\Plugin\Report;
 use Piwik\Plugin\ViewDataTable;
 use Piwik\Plugins\RebelErrorTracking\Categories\ErrorsCategory;
+use Piwik\Report\ReportWidgetFactory;
+use Piwik\Widget\WidgetsList;
 
 class GetErrors extends Report
 {
@@ -28,7 +30,12 @@ class GetErrors extends Report
         $this->defaultSortColumn = 'nb_errors';
         $this->actionToLoadSubTables = 'getOccurrences';
         $this->supportsFlatten = false;
-        $this->order = 1;
+        $this->order = 2;
+    }
+
+    public function configureWidgets(WidgetsList $widgetsList, ReportWidgetFactory $factory)
+    {
+        $widgetsList->addWidgetConfig($factory->createWidget()->setIsWide());
     }
 
     public function configureView(ViewDataTable $view)
@@ -44,10 +51,6 @@ class GetErrors extends Report
 
         $view->requestConfig->filter_sort_column = 'nb_errors';
         $view->requestConfig->filter_sort_order = 'desc';
-
-        // The API reports one period, which these need several of.
-        $view->config->disable_row_evolution = true;
-        $view->config->show_insights = false;
 
         $view->config->show_all_views_icons = false;
         $view->config->show_exclude_low_population = false;

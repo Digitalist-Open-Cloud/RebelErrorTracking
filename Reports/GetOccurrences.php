@@ -25,15 +25,16 @@ class GetOccurrences extends Report
         $this->metrics = [];
         $this->isSubtableReport = true;
         $this->supportsFlatten = false;
-        $this->order = 2;
+        $this->order = 3;
     }
 
     public function configureView(ViewDataTable $view)
     {
-        $view->config->columns_to_display = ['label', 'page_url', 'location', 'stack'];
+        $view->config->columns_to_display = ['label', 'page_url', 'browser', 'location', 'stack'];
         $view->config->addTranslations([
             'label' => Piwik::translate('RebelErrorTracking_ColumnTime'),
             'page_url' => Piwik::translate('RebelErrorTracking_ColumnPage'),
+            'browser' => Piwik::translate('RebelErrorTracking_ColumnBrowser'),
             'location' => Piwik::translate('RebelErrorTracking_ColumnLocation'),
             'stack' => Piwik::translate('RebelErrorTracking_ColumnStack'),
         ]);

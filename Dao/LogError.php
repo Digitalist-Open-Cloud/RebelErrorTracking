@@ -17,9 +17,6 @@ class LogError
 {
     public const TABLE = 'rebel_error_log';
 
-    // ponytail: the report shows the most frequent errors only, page through them if a site has more
-    private const MAX_GROUPS = 1000;
-
     public function install(): void
     {
         DbHelper::createTable(self::TABLE, "
@@ -72,25 +69,6 @@ class LogError
     }
 
     /**
-     * The errors of a website between two times in UTC, one row for each fingerprint.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    public function getGroups(int $idSite, string $from, string $to): array
-    {
-        return Db::fetchAll(
-            'SELECT MAX(idlog) AS idlog, MIN(type) AS type, MIN(message) AS message, MIN(source) AS source,
-                    COUNT(*) AS nb_errors, COUNT(DISTINCT idvisit) AS nb_visits, MAX(server_time) AS last_seen
-               FROM ' . $this->table() . '
-              WHERE idsite = ? AND server_time BETWEEN ? AND ?
-              GROUP BY fingerprint
-              ORDER BY nb_errors DESC, idlog DESC
-              LIMIT ' . self::MAX_GROUPS,
-            [$idSite, $from, $to]
-        );
-    }
-
-    /**
      * The latest errors with the fingerprint of the given one, newest first.
      *
      * @return array<int, array<string, mixed>>
@@ -100,11 +78,13 @@ class LogError
         $table = $this->table();
 
         return Db::fetchAll(
-            "SELECT server_time, page_url, source, line_number, column_number, stack
-               FROM $table
-              WHERE idsite = ? AND server_time BETWEEN ? AND ?
-                AND fingerprint = (SELECT fingerprint FROM $table WHERE idlog = ? AND idsite = ?)
-              ORDER BY idlog DESC
+            "SELECT error.server_time, error.page_url, error.source, error.line_number, error.column_number, error.stack,
+                    visit.config_browser_name, visit.config_browser_version, visit.config_os, visit.config_os_version
+               FROM $table error
+               LEFT JOIN " . Common::prefixTable('log_visit') . " visit ON visit.idvisit = error.idvisit
+              WHERE error.idsite = ? AND error.server_time BETWEEN ? AND ?
+                AND error.fingerprint = (SELECT fingerprint FROM $table WHERE idlog = ? AND idsite = ?)
+              ORDER BY error.idlog DESC
               LIMIT " . $limit,
             [$idSite, $from, $to, $idLog, $idSite]
         );
