@@ -51,7 +51,7 @@ class ActionError extends Action
 
         if (
             $error === null
-            || !(new MeasurableSettings($idSite))->enabled->getValue()
+            || !(new MeasurableSettings($idSite))->accepts($error)
             || $log->countForVisit($idVisit) >= self::MAX_ERRORS_PER_VISIT
         ) {
             return;

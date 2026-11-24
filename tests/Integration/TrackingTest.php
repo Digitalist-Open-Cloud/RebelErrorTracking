@@ -39,6 +39,7 @@ class TrackingTest extends IntegrationTestCase
     {
         parent::setUp();
 
+        Fixture::loadAllTranslations();
         Fixture::createSuperUser();
         Fixture::createWebsite('2024-01-01 00:00:00');
         Fixture::createWebsite('2024-01-01 00:00:00');
@@ -131,6 +132,43 @@ class TrackingTest extends IntegrationTestCase
         $this->trackError($this->startVisit(2), ['ret_m' => 'Dropped']);
 
         $this->assertSame(['Kept'], array_column($this->getLog(), 'message'));
+    }
+
+    public function testBrowserWarningsAreOnlyStoredForAWebsiteThatAsksForThem()
+    {
+        $settings = new MeasurableSettings(2);
+        $settings->browserWarnings->setValue(true);
+        $settings->save();
+
+        $warning = ['ret_t' => 'browser', 'ret_m' => 'deprecation: Unload event listeners are deprecated'];
+        $this->trackError($this->startVisit(1), $warning);
+        $this->trackError($this->startVisit(2), $warning);
+
+        $this->assertEquals([2], array_column($this->getLog(), 'idsite'));
+    }
+
+    public function testAContentSecurityPolicyViolationIsStored()
+    {
+        $this->trackError($this->startVisit(1), ['ret_t' => 'csp', 'ret_m' => 'Content Security Policy: img-src', 'ret_s' => 'https://evil.example/x.png']);
+
+        $this->assertSame(['csp'], array_column($this->getLog(), 'type'));
+        $this->assertSame(['Content Security Policy'], ErrorsApi::getInstance()->getErrors(1, 'day', self::DAY)->getColumn('type'));
+    }
+
+    public function testErrorsAWebsiteIgnoresAreNotStored()
+    {
+        $settings = new MeasurableSettings(1);
+        $settings->ignored->setValue("chat-widget\n\n  can't find VARIABLE \n");
+        $settings->save();
+
+        $tracker = $this->startVisit(1);
+        $this->trackError($tracker, ['ret_m' => 'Boom', 'ret_s' => 'https://cdn.example/Chat-Widget.js']);
+        $this->trackError($tracker, ['ret_m' => "ReferenceError: Can't find variable: x"]);
+        $this->trackError($tracker, ['ret_m' => 'Kept', 'ret_s' => 'https://example.org/app.js']);
+        $this->trackError($this->startVisit(2), ['ret_m' => 'Boom', 'ret_s' => 'https://cdn.example/chat-widget.js']);
+
+        $this->assertSame(['Kept', 'Boom'], array_column($this->getLog(), 'message'));
+        $this->assertEquals([1, 2], array_column($this->getLog(), 'idsite'));
     }
 
     public function testAVisitCanNotStoreMoreThanAHundredErrors()
