@@ -1,0 +1,27 @@
+{
+    "name": "RebelErrorTracking",
+    "description": "Track JavaScript errors and other errors the browser can capture on the sites you measure.",
+    "version": "5.0.0",
+    "theme": false,
+    "require": {
+        "matomo": ">=5.0.0-stable,<6.0.0-b1",
+        "php": ">=8.3.0"
+    },
+    "authors": [
+        {
+            "name": "Digitalist Open Cloud",
+            "email": "cloud@digitalist.com",
+            "homepage": "https:\/\/digitalist.cloud"
+        }
+    ],
+    "support": {
+        "issues": "https:\/\/github.com\/Digitalist-Open-Cloud\/RebelErrorTracking\/issues"
+    },
+    "homepage": "https:\/\/digitalist.cloud",
+    "license": "GPL v3+",
+    "keywords": [
+        "errors",
+        "javascript",
+        "error tracking"
+    ]
+}

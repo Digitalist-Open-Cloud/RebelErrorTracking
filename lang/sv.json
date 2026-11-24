@@ -1,0 +1,25 @@
+{
+    "RebelErrorTracking": {
+        "ColumnErrors": "Fel",
+        "ColumnLastSeen": "Senast sedd",
+        "ColumnLocation": "Plats",
+        "ColumnMessage": "Fel",
+        "ColumnPage": "Sida",
+        "ColumnSource": "Fil",
+        "ColumnStack": "Stackspårning",
+        "ColumnTime": "Tid",
+        "ColumnType": "Typ",
+        "ErrorRetentionRange": "Ange ett antal dagar mellan %1$s och %2$s.",
+        "Errors": "Fel",
+        "ErrorsReportDocumentation": "Felen som inträffade i dina besökares webbläsare: JavaScript-fel, promises som avvisades utan att hanteras, och bilder, skript och stilmallar som inte kunde laddas. Samma fel är en rad. Klicka på en rad för att se när det senast inträffade, på vilken sida och med vilken stackspårning.",
+        "Occurrences": "Senaste förekomster",
+        "PluginDescription": "Spåra JavaScript-fel och andra fel som webbläsaren kan fånga på de webbplatser du mäter.",
+        "SettingEnabled": "Spåra fel",
+        "SettingEnabledHelp": "Spara felen som inträffar i webbläsarna hos besökarna på den här webbplatsen.",
+        "SettingRetention": "Antal dagar som fel sparas",
+        "SettingRetentionHelp": "Fel som är äldre än så raderas.",
+        "Type_js": "JavaScript",
+        "Type_promise": "Promise",
+        "Type_resource": "Resurs"
+    }
+}

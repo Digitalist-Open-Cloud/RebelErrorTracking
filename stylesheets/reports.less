@@ -1,0 +1,43 @@
+// Matomo lays a report out for a wide label and narrow numbers, aligned to the right. These
+// columns hold text, so the widths and the alignment are set here.
+[data-report="RebelErrorTracking.getErrors"] table.dataTable {
+  th:nth-child(2), td:nth-child(2),
+  th:nth-child(3), td:nth-child(3) {
+    text-align: left !important;
+  }
+}
+
+[data-report="RebelErrorTracking.getOccurrences"] table.dataTable {
+  th, td {
+    text-align: left !important;
+    vertical-align: top;
+    max-width: none !important;
+  }
+
+  th:nth-child(1), td:nth-child(1) {
+    width: 14% !important;
+    white-space: nowrap;
+  }
+
+  // The time is not cut short as a long label is.
+  td:nth-child(1) * {
+    max-width: none !important;
+    overflow: visible !important;
+  }
+
+  th:nth-child(2), td:nth-child(2),
+  th:nth-child(3), td:nth-child(3) {
+    width: 22% !important;
+    word-break: break-all;
+  }
+
+  th:nth-child(4), td:nth-child(4) {
+    width: 42% !important;
+  }
+
+  // A stack trace is one frame on each line.
+  td.column .value {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+}

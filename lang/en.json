@@ -1,0 +1,25 @@
+{
+    "RebelErrorTracking": {
+        "ColumnErrors": "Errors",
+        "ColumnLastSeen": "Last seen",
+        "ColumnLocation": "Location",
+        "ColumnMessage": "Error",
+        "ColumnPage": "Page",
+        "ColumnSource": "File",
+        "ColumnStack": "Stack trace",
+        "ColumnTime": "Time",
+        "ColumnType": "Type",
+        "ErrorRetentionRange": "Enter a number of days between %1$s and %2$s.",
+        "Errors": "Errors",
+        "ErrorsReportDocumentation": "The errors that happened in the browsers of your visitors: JavaScript errors, promises that were rejected without being handled, and images, scripts and stylesheets that failed to load. The same error is one row. Click a row to see when it last happened, on which page and with which stack trace.",
+        "Occurrences": "Latest occurrences",
+        "PluginDescription": "Track JavaScript errors and other errors the browser can capture on the sites you measure.",
+        "SettingEnabled": "Track errors",
+        "SettingEnabledHelp": "Store the errors that happen in the browsers of the visitors of this website.",
+        "SettingRetention": "Days to keep errors",
+        "SettingRetentionHelp": "Errors older than this are deleted.",
+        "Type_js": "JavaScript",
+        "Type_promise": "Promise",
+        "Type_resource": "Resource"
+    }
+}
