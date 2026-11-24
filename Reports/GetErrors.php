@@ -40,11 +40,12 @@ class GetErrors extends Report
 
     public function configureView(ViewDataTable $view)
     {
-        $view->config->columns_to_display = ['label', 'type', 'source', 'nb_errors', 'nb_visits', 'last_seen'];
+        $view->config->columns_to_display = ['label', 'type', 'source', 'browsers', 'nb_errors', 'nb_visits', 'last_seen'];
         $view->config->addTranslations([
             'label' => Piwik::translate('RebelErrorTracking_ColumnMessage'),
             'type' => Piwik::translate('RebelErrorTracking_ColumnType'),
             'source' => Piwik::translate('RebelErrorTracking_ColumnSource'),
+            'browsers' => Piwik::translate('RebelErrorTracking_ColumnBrowsers'),
             'nb_errors' => Piwik::translate('RebelErrorTracking_ColumnErrors'),
             'last_seen' => Piwik::translate('RebelErrorTracking_ColumnLastSeen'),
         ]);

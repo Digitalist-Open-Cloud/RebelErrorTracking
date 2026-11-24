@@ -137,7 +137,7 @@ Deno.test("the errors a snippet collected before the tracker was loaded are sent
     ["js", "Early error"],
     ["promise", "Early rejection"],
     ["resource", "Failed to load script"],
-    ["csp", "Content Security Policy: img-src"],
+    ["csp", "Blocked by img-src"],
   ]);
 
   // The snippet keeps listening, what it collects from now on is not kept.
@@ -154,10 +154,10 @@ Deno.test("a Content Security Policy violation is sent with what was blocked", (
   env.fire("securitypolicyviolation", { violatedDirective: "img-src", blockedURI: "data", disposition: "report" });
 
   assertEquals(Object.fromEntries(env.requests[0]), {
-    ca: "1", ret_t: "csp", ret_m: "Content Security Policy: script-src-elem", ret_s: "https://evil.example/x.js",
+    ca: "1", ret_t: "csp", ret_m: "Blocked by script-src-elem", ret_s: "https://evil.example/x.js",
     ret_l: "4", ret_c: "2", ret_k: "at https://shop.example/:4:2",
   });
-  assertEquals(env.requests[1].get("ret_m"), "Content Security Policy: img-src (report only)");
+  assertEquals(env.requests[1].get("ret_m"), "Would be blocked by img-src");
 });
 
 Deno.test("what the browser reports about the page is sent", () => {

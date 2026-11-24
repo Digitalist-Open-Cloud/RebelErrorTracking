@@ -1,0 +1,9 @@
+<li class="action rebelErrorTrackingAction" title="{{ action.serverTimePretty }}">
+    <div>
+        <span class="rebelErrorTrackingIcon action-list-action-icon"></span>
+        <span class="truncated-text-line"><strong>{{ action.title }}:</strong> {{ action.errorMessage|rawSafeDecoded }}</span>
+        {% if action.errorLocation is not empty %}
+            <span class="truncated-text-line rebelErrorTrackingLocation">{{ action.errorLocation|rawSafeDecoded }}</span>
+        {% endif %}
+    </div>
+</li>

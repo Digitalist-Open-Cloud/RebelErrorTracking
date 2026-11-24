@@ -43,4 +43,11 @@ class ErrorLogTable extends LogTable
     {
         return true;
     }
+
+    // A visit can have several errors, so a report about visits that is narrowed by an error
+    // counts the visit once.
+    public function shouldJoinWithSubSelect()
+    {
+        return true;
+    }
 }

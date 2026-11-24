@@ -13,6 +13,7 @@ use Piwik\Common;
 use Piwik\Container\StaticContainer;
 use Piwik\Db;
 use Piwik\LogDeleter;
+use Piwik\Plugins\Live\API as LiveApi;
 use Piwik\Plugins\PrivacyManager\Model\DataSubjects;
 use Piwik\Plugins\RebelErrorTracking\API as ErrorsApi;
 use Piwik\Plugins\RebelErrorTracking\Dao\LogError;
@@ -110,8 +111,64 @@ class TrackingTest extends IntegrationTestCase
 
         $errors = ErrorsApi::getInstance()->getErrors(1, 'day', self::DAY);
         $first = $errors->getRowFromLabel('First');
+        $this->assertSame('Firefox 120.0 (1), Safari 17.1 (1)', $first->getColumn('browsers'));
+        $this->assertSame('Firefox 120.0 (1)', $errors->getRowFromLabel('Second')->getColumn('browsers'));
         $occurrences = ErrorsApi::getInstance()->getOccurrences(1, 'day', self::DAY, $first->getIdSubDataTable());
         $this->assertSame(['Safari 17.1, Mac 10.15', 'Firefox 120.0, Windows 10'], $occurrences->getColumn('browser'));
+    }
+
+    public function testTheBrowsersOfAnErrorAreSummedOverSeveralDays()
+    {
+        $firefox = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0';
+        $safari = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15';
+
+        $this->trackError($this->startVisit(1, '2024-03-04', $firefox), ['ret_m' => 'Boom']);
+        $this->trackError($this->startVisit(1, self::DAY, $firefox), ['ret_m' => 'Boom']);
+        $this->trackError($this->startVisit(1, self::DAY, $safari), ['ret_m' => 'Boom']);
+
+        $week = ErrorsApi::getInstance()->getErrors(1, 'week', self::DAY);
+
+        $this->assertSame(['Firefox 120.0 (2), Safari 17.1 (1)'], $week->getColumn('browsers'));
+    }
+
+    public function testOtherReportsCanBeNarrowedToVisitsWithAnError()
+    {
+        $tracker = $this->startVisit(1);
+        $this->trackError($tracker, ['ret_m' => 'Checkout failed']);
+        $this->trackError($tracker, ['ret_m' => 'Checkout failed again', 'ret_t' => 'promise']);
+        $this->trackError($this->startVisit(1), ['ret_m' => 'Other error']);
+        $this->startVisit(1);
+
+        $visits = function (string $segment) {
+            return VisitsSummaryApi::getInstance()->get(1, 'day', self::DAY, $segment)->getFirstRow()->getColumn('nb_visits');
+        };
+
+        $this->assertEquals(3, $visits(''));
+        $this->assertEquals(1, $visits('errorMessage=@Checkout'));
+        $this->assertEquals(1, $visits('errorType==promise'));
+        $this->assertEquals(2, $visits('errorType==js'));
+        $this->assertEquals(2, $visits('errorType!='), 'visits with an error');
+        $this->assertEquals(1, $visits('errorType=='), 'visits without an error');
+    }
+
+    public function testTheVisitLogShowsTheErrorsOfAVisit()
+    {
+        $tracker = $this->startVisit(1);
+        $this->trackError($tracker, ['ret_m' => 'Boom', 'ret_s' => 'http://example.org/app.js', 'ret_l' => 7, 'ret_c' => 3]);
+        $this->startVisit(1);
+
+        $visits = LiveApi::getInstance()->getLastVisitsDetails(1, 'day', self::DAY);
+        $visits->applyQueuedFilters();
+        $errors = [];
+        foreach ($visits->getRows() as $visit) {
+            foreach ($visit->getColumn('actionDetails') as $action) {
+                if ($action['type'] === 'error') {
+                    $errors[] = [$action['title'], $action['errorMessage'], $action['errorLocation']];
+                }
+            }
+        }
+
+        $this->assertSame([['JavaScript', 'Boom', 'http://example.org/app.js:7:3']], $errors);
     }
 
     public function testARequestWithoutAUsableErrorStoresNothing()
@@ -149,7 +206,7 @@ class TrackingTest extends IntegrationTestCase
 
     public function testAContentSecurityPolicyViolationIsStored()
     {
-        $this->trackError($this->startVisit(1), ['ret_t' => 'csp', 'ret_m' => 'Content Security Policy: img-src', 'ret_s' => 'https://evil.example/x.png']);
+        $this->trackError($this->startVisit(1), ['ret_t' => 'csp', 'ret_m' => 'Blocked by img-src', 'ret_s' => 'https://evil.example/x.png']);
 
         $this->assertSame(['csp'], array_column($this->getLog(), 'type'));
         $this->assertSame(['Content Security Policy'], ErrorsApi::getInstance()->getErrors(1, 'day', self::DAY)->getColumn('type'));

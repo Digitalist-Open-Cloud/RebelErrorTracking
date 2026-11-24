@@ -1,6 +1,7 @@
 {
     "RebelErrorTracking": {
         "ColumnBrowser": "Webbläsare",
+        "ColumnBrowsers": "Mest i",
         "ColumnErrors": "Fel",
         "ColumnLastSeen": "Senast sedd",
         "ColumnLocation": "Plats",
@@ -11,6 +12,12 @@
         "ColumnTime": "Tid",
         "ColumnType": "Typ",
         "ColumnVisitsWithErrors": "Besök med fel",
+        "DimensionMessage": "Felmeddelande",
+        "DimensionMessages": "Felmeddelanden",
+        "DimensionSource": "Fil med fel",
+        "DimensionSources": "Filer med fel",
+        "DimensionType": "Feltyp",
+        "DimensionTypes": "Feltyper",
         "ErrorRetentionRange": "Ange ett antal dagar mellan %1$s och %2$s.",
         "ErrorTooManyIgnored": "Ange högst %1$s rader.",
         "Errors": "Fel",
