@@ -12,6 +12,7 @@ namespace Piwik\Plugins\RebelErrorTracking\RecordBuilders;
 use Piwik\ArchiveProcessor;
 use Piwik\ArchiveProcessor\Record;
 use Piwik\ArchiveProcessor\RecordBuilder;
+use Piwik\Config;
 use Piwik\Container\StaticContainer;
 use Piwik\DataAccess\LogQueryBuilder;
 use Piwik\DataTable;
@@ -31,12 +32,13 @@ class Errors extends RecordBuilder
     public const NB_ERRORS = 'RebelErrorTracking_nb_errors';
     public const NB_VISITS = 'RebelErrorTracking_nb_visits_with_errors';
 
-    private const MAX_ROWS = 500;
     private const MAX_BROWSERS_OF_AN_ERROR = 20;
 
     public function __construct()
     {
-        parent::__construct(self::MAX_ROWS, self::MAX_BROWSERS_OF_AN_ERROR, 'nb_errors', ['last_seen' => 'max', 'max_idlog' => 'max', 'first_seen' => 'min']);
+        $maxRows = (int) Config::getInstance()->General['datatable_archiving_maximum_rows_standard'];
+
+        parent::__construct($maxRows ?: null, self::MAX_BROWSERS_OF_AN_ERROR, 'nb_errors', ['last_seen' => 'max', 'max_idlog' => 'max', 'first_seen' => 'min']);
     }
 
     public function getRecordMetadata(ArchiveProcessor $archiveProcessor): array

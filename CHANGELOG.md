@@ -20,3 +20,12 @@
 - The error rate: the share of visits with an error.
 - The report "Errors by page" and the numbers of the period as "Errors in numbers".
 - The time of an occurrence links to its visit in the visit log.
+
+### Fixed
+
+- The link from an occurrence to its visit opens Matomo.
+- A segment on the error message or the error file matches texts with quotes, `<`, `>` and `&`.
+
+### Security
+
+- The addresses in a stack trace are stored without what follows `?` and `#`, as the other addresses are.

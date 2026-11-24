@@ -10,6 +10,7 @@
 namespace Piwik\Plugins\RebelErrorTracking\Columns;
 
 use Piwik\Columns\Dimension;
+use Piwik\Common;
 use Piwik\Plugins\RebelErrorTracking\Categories\ErrorsCategory;
 use Piwik\Plugins\RebelErrorTracking\Dao\LogError;
 
@@ -22,4 +23,7 @@ class ErrorSource extends Dimension
     protected $nameSingular = 'RebelErrorTracking_DimensionSource';
     protected $namePlural = 'RebelErrorTracking_DimensionSources';
     protected $category = ErrorsCategory::ID;
+
+    // The texts are stored encoded for HTML, so a value to compare with is encoded the same way.
+    protected $sqlFilterValue = [Common::class, 'sanitizeInputValue'];
 }
