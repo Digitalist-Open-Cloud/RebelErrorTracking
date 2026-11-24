@@ -20,12 +20,14 @@ use Piwik\Plugins\RebelErrorTracking\Dao\LogError;
 
 /**
  * The errors of a period: one row for each fingerprint with its browsers under it, the errors of each
- * browser, and the totals.
+ * browser and of each page, and the totals.
  */
 class Errors extends RecordBuilder
 {
     public const RECORD = 'RebelErrorTracking_errors';
     public const BROWSERS = 'RebelErrorTracking_browsers';
+    public const PAGES = 'RebelErrorTracking_pages';
+    public const NB_NEW_ERRORS = 'RebelErrorTracking_nb_new_errors';
     public const NB_ERRORS = 'RebelErrorTracking_nb_errors';
     public const NB_VISITS = 'RebelErrorTracking_nb_visits_with_errors';
 
@@ -34,7 +36,7 @@ class Errors extends RecordBuilder
 
     public function __construct()
     {
-        parent::__construct(self::MAX_ROWS, self::MAX_BROWSERS_OF_AN_ERROR, 'nb_errors', ['last_seen' => 'max', 'max_idlog' => 'max']);
+        parent::__construct(self::MAX_ROWS, self::MAX_BROWSERS_OF_AN_ERROR, 'nb_errors', ['last_seen' => 'max', 'max_idlog' => 'max', 'first_seen' => 'min']);
     }
 
     public function getRecordMetadata(ArchiveProcessor $archiveProcessor): array
@@ -42,6 +44,8 @@ class Errors extends RecordBuilder
         return [
             Record::make(Record::TYPE_BLOB, self::RECORD),
             Record::make(Record::TYPE_BLOB, self::BROWSERS),
+            Record::make(Record::TYPE_BLOB, self::PAGES),
+            Record::make(Record::TYPE_NUMERIC, self::NB_NEW_ERRORS),
             Record::make(Record::TYPE_NUMERIC, self::NB_ERRORS),
             Record::make(Record::TYPE_NUMERIC, self::NB_VISITS),
         ];
@@ -100,6 +104,37 @@ class Errors extends RecordBuilder
             ]));
         }
 
+        // An error is new in the period it was first seen in.
+        [$periodStart, $periodEnd] = array_map(function (string $time) {
+            return strtotime($time . ' UTC');
+        }, array_slice($logAggregator->getGeneralQueryBindParams(), 0, 2));
+        $idSites = $archiveProcessor->getParams()->getIdSites();
+        $firstSeen = (new LogError())->getFirstSeen($idSites, $table->getColumn('label'));
+        $newErrors = 0;
+        foreach ($table->getRows() as $row) {
+            if (isset($firstSeen[$row->getColumn('label')])) {
+                $time = strtotime($firstSeen[$row->getColumn('label')] . ' UTC');
+                $row->setColumn('first_seen', $time);
+                $newErrors += (int) ($time >= $periodStart && $time <= $periodEnd);
+            }
+        }
+
+        $query = $logAggregator->generateQuery(
+            "$log.page_url AS label, COUNT(*) AS nb_errors, COUNT(DISTINCT $log.idvisit) AS nb_visits",
+            $from,
+            $where,
+            'label',
+            'nb_errors DESC'
+        );
+        $pages = new DataTable();
+        foreach ($logAggregator->getDb()->fetchAll($query['sql'], $query['bind']) as $page) {
+            $pages->addRowFromSimpleArray([
+                'label' => $page['label'],
+                'nb_errors' => (int) $page['nb_errors'],
+                'nb_visits' => (int) $page['nb_visits'],
+            ]);
+        }
+
         // The browsers of each error, as the rows under its row.
         $query = $logAggregator->generateQuery(
             "$log.fingerprint AS fingerprint,
@@ -152,6 +187,8 @@ class Errors extends RecordBuilder
         return [
             self::RECORD => $table,
             self::BROWSERS => $browsers,
+            self::PAGES => $pages,
+            self::NB_NEW_ERRORS => $newErrors,
             self::NB_ERRORS => (int) ($totals['nb_errors'] ?? 0),
             self::NB_VISITS => (int) ($totals['nb_visits'] ?? 0),
         ];

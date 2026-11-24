@@ -49,10 +49,13 @@ class RebelErrorTracking extends Plugin
     {
         $translations['nb_errors'] = 'RebelErrorTracking_ColumnErrors';
         $translations['nb_visits_with_errors'] = 'RebelErrorTracking_ColumnVisitsWithErrors';
+        $translations['nb_new_errors'] = 'RebelErrorTracking_ColumnNewErrors';
+        $translations['error_rate'] = 'RebelErrorTracking_ColumnErrorRate';
     }
 
     public function getTablesInstalled(&$tables)
     {
         $tables[] = Common::prefixTable(LogError::TABLE);
+        $tables[] = Common::prefixTable(LogError::FIRST_SEEN_TABLE);
     }
 }
