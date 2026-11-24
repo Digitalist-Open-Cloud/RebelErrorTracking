@@ -20,6 +20,7 @@ class RebelErrorTracking extends Plugin
         return [
             'AssetManager.getStylesheetFiles' => 'getStylesheetFiles',
             'Db.getTablesInstalled' => 'getTablesInstalled',
+            'Metrics.getDefaultMetricTranslations' => 'addMetricTranslations',
         ];
     }
 
@@ -42,6 +43,12 @@ class RebelErrorTracking extends Plugin
     {
         $stylesheets[] = 'plugins/RebelErrorTracking/stylesheets/menuIcon.less';
         $stylesheets[] = 'plugins/RebelErrorTracking/stylesheets/reports.less';
+    }
+
+    public function addMetricTranslations(&$translations)
+    {
+        $translations['nb_errors'] = 'RebelErrorTracking_ColumnErrors';
+        $translations['nb_visits_with_errors'] = 'RebelErrorTracking_ColumnVisitsWithErrors';
     }
 
     public function getTablesInstalled(&$tables)

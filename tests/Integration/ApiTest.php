@@ -30,8 +30,19 @@ class ApiTest extends IntegrationTestCase
         parent::setUp();
 
         Fixture::loadAllTranslations();
+        Fixture::createSuperUser();
         Fixture::createWebsite('2024-01-01 00:00:00');
         Fixture::createWebsite('2024-01-01 00:00:00', 0, false, false, 1, null, null, 'Europe/Stockholm');
+
+        // Matomo archives the days that have visits.
+        foreach ([1, 2] as $idSite) {
+            foreach (['2024-03-04', self::DAY] as $day) {
+                $tracker = Fixture::getTracker($idSite, $day . ' 12:00:00', true, true);
+                $tracker->setTokenAuth(Fixture::getTokenAuth());
+                $tracker->setUrl('http://example.org/shop');
+                Fixture::checkResponse($tracker->doTrackPageView('Shop'));
+            }
+        }
     }
 
     public function testTheSameErrorIsOneRowWithItsCounts()
@@ -45,8 +56,8 @@ class ApiTest extends IntegrationTestCase
 
         $this->assertCount(2, $rows);
         $first = reset($rows);
-        $this->assertSame(3, $first->getColumn('nb_errors'));
-        $this->assertSame(2, $first->getColumn('nb_visits'));
+        $this->assertEquals(3, $first->getColumn('nb_errors'));
+        $this->assertEquals(2, $first->getColumn('nb_visits'));
         $this->assertSame(self::DAY . ' 11:00:00', $first->getColumn('last_seen'));
         $this->assertSame('JavaScript', $first->getColumn('type'));
         $this->assertSame('http://example.org/app.js', $first->getColumn('source'));
@@ -61,8 +72,51 @@ class ApiTest extends IntegrationTestCase
 
         $this->assertSame(['Today'], $this->getMessages(1, 'day', self::DAY));
         $this->assertEqualsCanonicalizing(['Today', 'Yesterday'], $this->getMessages(1, 'week', self::DAY));
-        $this->assertEqualsCanonicalizing(['Today', 'Yesterday'], $this->getMessages(1, 'day', '2024-03-04,2024-03-05'));
         $this->assertEqualsCanonicalizing(['Today', 'Yesterday'], $this->getMessages(1, 'range', '2024-03-04,2024-03-05'));
+    }
+
+    public function testSeveralDaysAreReportedDayByDay()
+    {
+        $this->addError(1, 10, 'Today', '10:00:00');
+        $this->addError(1, 10, 'Yesterday', '10:00:00', '2024-03-04');
+
+        $days = API::getInstance()->getErrors(1, 'day', '2024-03-04,2024-03-05')->getDataTables();
+
+        $this->assertSame(['2024-03-04', self::DAY], array_keys($days));
+        $this->assertSame(['Yesterday'], $days['2024-03-04']->getColumn('label'));
+        $this->assertSame(['Today'], $days[self::DAY]->getColumn('label'));
+    }
+
+    public function testAnErrorOfSeveralDaysIsOneRowInALongerPeriod()
+    {
+        $this->addError(1, 10, 'Boom', '10:00:00', '2024-03-04');
+        $this->addError(1, 11, 'Boom', '09:00:00');
+        $this->addError(1, 11, 'Boom', '09:30:00');
+
+        $rows = API::getInstance()->getErrors(1, 'week', self::DAY)->getRows();
+
+        $this->assertCount(1, $rows);
+        $row = reset($rows);
+        $this->assertEquals(3, $row->getColumn('nb_errors'));
+        $this->assertSame(self::DAY . ' 09:30:00', $row->getColumn('last_seen'));
+        $this->assertSame('http://example.org/app.js', $row->getColumn('source'));
+    }
+
+    public function testTheTotalsOfAPeriodAreReported()
+    {
+        $this->addError(1, 10, 'Boom', '10:00:00');
+        $this->addError(1, 10, 'Other error', '10:05:00');
+        $this->addError(1, 11, 'Boom', '11:00:00');
+        $this->addError(1, 12, 'Boom', '11:00:00', '2024-03-04');
+
+        $day = API::getInstance()->get(1, 'day', self::DAY)->getFirstRow();
+        $this->assertEquals(3, $day->getColumn('nb_errors'));
+        $this->assertEquals(2, $day->getColumn('nb_visits_with_errors'));
+
+        $week = API::getInstance()->get(1, 'week', self::DAY)->getFirstRow();
+        $this->assertEquals(4, $week->getColumn('nb_errors'));
+
+        $this->assertSame(['nb_errors'], array_keys(API::getInstance()->get(1, 'day', self::DAY, false, 'nb_errors')->getFirstRow()->getColumns()));
     }
 
     public function testADayIsADayInTheTimezoneOfTheWebsite()
@@ -129,6 +183,7 @@ class ApiTest extends IntegrationTestCase
     public function getReports(): array
     {
         return [
+            ['get', [2, 'day', self::DAY]],
             ['getErrors', [2, 'day', self::DAY]],
             ['getOccurrences', [2, 'day', self::DAY, 1]],
         ];

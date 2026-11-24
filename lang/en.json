@@ -1,5 +1,6 @@
 {
     "RebelErrorTracking": {
+        "ColumnBrowser": "Browser",
         "ColumnErrors": "Errors",
         "ColumnLastSeen": "Last seen",
         "ColumnLocation": "Location",
@@ -9,8 +10,13 @@
         "ColumnStack": "Stack trace",
         "ColumnTime": "Time",
         "ColumnType": "Type",
+        "ColumnVisitsWithErrors": "Visits with errors",
         "ErrorRetentionRange": "Enter a number of days between %1$s and %2$s.",
         "Errors": "Errors",
+        "ErrorsByBrowser": "Errors by browser",
+        "ErrorsByBrowserDocumentation": "The browsers and versions the errors happened in. An error that only one browser has points at something that browser does not support.",
+        "ErrorsOverTime": "Errors over time",
+        "ErrorsOverTimeDocumentation": "How many errors happened in the browsers of your visitors, and in how many visits.",
         "ErrorsReportDocumentation": "The errors that happened in the browsers of your visitors: JavaScript errors, promises that were rejected without being handled, and images, scripts and stylesheets that failed to load. The same error is one row. Click a row to see when it last happened, on which page and with which stack trace.",
         "Occurrences": "Latest occurrences",
         "PluginDescription": "Track JavaScript errors and other errors the browser can capture on the sites you measure.",

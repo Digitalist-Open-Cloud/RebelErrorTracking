@@ -24,15 +24,24 @@ A website that loads the tracker through Matomo Tag Manager is covered too.
 
 ## Reports
 
-**Errors** in the reporting menu lists the errors of the website for the chosen period. The same
-error is one row, with how many times it happened, in how many visits, and when it was last
-seen. Errors that differ only in numbers and IDs count as the same error.
+**Errors** in the reporting menu has three reports for the chosen website and period:
 
-Click a row to see its latest occurrences: the time, the page, the place in the code and the
-stack trace.
+- **Errors over time**: the number of errors, or of visits with an error, as a graph.
+- **Errors**: one row for each error, with how many times it happened, in how many visits, and
+  when it was last seen. Errors that differ only in numbers and IDs count as the same error.
+  Click a row to see its latest occurrences: the time, the page, the browser and operating
+  system, the place in the code and the stack trace.
+- **Errors by browser**: the browsers and versions the errors happened in.
 
-The reports are also in the API, as `RebelErrorTracking.getErrors` and
-`RebelErrorTracking.getOccurrences`. Segments are not supported.
+The browser comes from the visit an error belongs to, so the reports can also be narrowed with a
+segment, such as one browser, one country or one page.
+
+The reports are built when Matomo archives, like its other reports: an error shows up the next
+time the reports of the day are processed.
+
+In the API they are `RebelErrorTracking.get`, `getErrors`, `getOccurrences` and `getBrowsers`.
+The occurrences are read from the stored errors: they do not follow a segment, and they are gone
+when the errors are deleted, while the counts stay.
 
 ## Settings
 

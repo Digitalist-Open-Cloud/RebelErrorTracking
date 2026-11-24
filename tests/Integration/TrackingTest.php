@@ -14,6 +14,7 @@ use Piwik\Container\StaticContainer;
 use Piwik\Db;
 use Piwik\LogDeleter;
 use Piwik\Plugins\PrivacyManager\Model\DataSubjects;
+use Piwik\Plugins\RebelErrorTracking\API as ErrorsApi;
 use Piwik\Plugins\RebelErrorTracking\Dao\LogError;
 use Piwik\Plugins\RebelErrorTracking\MeasurableSettings;
 use Piwik\Plugins\RebelErrorTracking\Tasks;
@@ -72,6 +73,44 @@ class TrackingTest extends IntegrationTestCase
         $summary = VisitsSummaryApi::getInstance()->get(1, 'day', self::DAY)->getFirstRow();
         $this->assertEquals(1, $summary->getColumn('nb_visits'));
         $this->assertEquals(1, $summary->getColumn('nb_actions'));
+    }
+
+    public function testTheErrorsOfASegmentOfVisitsAreReported()
+    {
+        $tracker = $this->startVisit(1);
+        $tracker->setUserId('alice');
+        $this->trackError($tracker, ['ret_m' => 'Seen by Alice']);
+        $this->trackError($tracker, ['ret_m' => 'Seen by Alice', 'ret_l' => 2]);
+        $this->trackError($this->startVisit(1), ['ret_m' => 'Seen by someone else']);
+
+        $this->assertSame(
+            ['Seen by Alice'],
+            ErrorsApi::getInstance()->getErrors(1, 'day', self::DAY, 'userId==alice')->getColumn('label')
+        );
+        $this->assertEquals(2, ErrorsApi::getInstance()->getErrors(1, 'day', self::DAY, 'userId==alice')->getFirstRow()->getColumn('nb_errors'));
+        $this->assertEquals(2, ErrorsApi::getInstance()->get(1, 'day', self::DAY, 'userId==alice')->getFirstRow()->getColumn('nb_errors'));
+        $this->assertCount(2, ErrorsApi::getInstance()->getErrors(1, 'day', self::DAY)->getRows());
+    }
+
+    public function testErrorsAreReportedByTheBrowserOfTheVisit()
+    {
+        $firefox = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0';
+        $safari = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15';
+
+        $tracker = $this->startVisit(1, self::DAY, $firefox);
+        $this->trackError($tracker, ['ret_m' => 'First']);
+        $this->trackError($tracker, ['ret_m' => 'Second']);
+        $this->trackError($this->startVisit(1, self::DAY, $safari), ['ret_m' => 'First']);
+
+        $browsers = ErrorsApi::getInstance()->getBrowsers(1, 'day', self::DAY);
+        $this->assertSame(['Firefox 120.0', 'Safari 17.1'], $browsers->getColumn('label'));
+        $this->assertEquals([2, 1], $browsers->getColumn('nb_errors'));
+        $this->assertEquals([1, 1], $browsers->getColumn('nb_visits'));
+
+        $errors = ErrorsApi::getInstance()->getErrors(1, 'day', self::DAY);
+        $first = $errors->getRowFromLabel('First');
+        $occurrences = ErrorsApi::getInstance()->getOccurrences(1, 'day', self::DAY, $first->getIdSubDataTable());
+        $this->assertSame(['Safari 17.1, Mac 10.15', 'Firefox 120.0, Windows 10'], $occurrences->getColumn('browser'));
     }
 
     public function testARequestWithoutAUsableErrorStoresNothing()
@@ -138,13 +177,16 @@ class TrackingTest extends IntegrationTestCase
     /**
      * A visit with one page view.
      */
-    private function startVisit(int $idSite, string $day = self::DAY): \MatomoTracker
+    private function startVisit(int $idSite, string $day = self::DAY, string $userAgent = ''): \MatomoTracker
     {
         $tracker = Fixture::getTracker($idSite, $day . ' 10:00:00', true, true);
         $tracker->setTokenAuth(Fixture::getTokenAuth());
         $tracker->setNewVisitorId();
         // Matomo takes requests from one address for one visit.
         $tracker->setIp('10.0.0.' . (1 + $this->visits++));
+        if ($userAgent !== '') {
+            $tracker->setUserAgent($userAgent);
+        }
         $tracker->setUrl('http://example.org/shop?step=2');
         Fixture::checkResponse($tracker->doTrackPageView('Shop'));
         $tracker->setForceVisitDateTime($day . ' 10:01:00');

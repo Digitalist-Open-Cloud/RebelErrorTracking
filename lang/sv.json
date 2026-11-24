@@ -1,5 +1,6 @@
 {
     "RebelErrorTracking": {
+        "ColumnBrowser": "Webbläsare",
         "ColumnErrors": "Fel",
         "ColumnLastSeen": "Senast sedd",
         "ColumnLocation": "Plats",
@@ -9,8 +10,13 @@
         "ColumnStack": "Stackspårning",
         "ColumnTime": "Tid",
         "ColumnType": "Typ",
+        "ColumnVisitsWithErrors": "Besök med fel",
         "ErrorRetentionRange": "Ange ett antal dagar mellan %1$s och %2$s.",
         "Errors": "Fel",
+        "ErrorsByBrowser": "Fel per webbläsare",
+        "ErrorsByBrowserDocumentation": "Webbläsarna och versionerna som felen inträffade i. Ett fel som bara en webbläsare har tyder på något som den webbläsaren inte stöder.",
+        "ErrorsOverTime": "Fel över tid",
+        "ErrorsOverTimeDocumentation": "Hur många fel som inträffade i dina besökares webbläsare, och i hur många besök.",
         "ErrorsReportDocumentation": "Felen som inträffade i dina besökares webbläsare: JavaScript-fel, promises som avvisades utan att hanteras, och bilder, skript och stilmallar som inte kunde laddas. Samma fel är en rad. Klicka på en rad för att se när det senast inträffade, på vilken sida och med vilken stackspårning.",
         "Occurrences": "Senaste förekomster",
         "PluginDescription": "Spåra JavaScript-fel och andra fel som webbläsaren kan fånga på de webbplatser du mäter.",

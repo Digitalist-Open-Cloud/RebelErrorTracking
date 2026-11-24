@@ -43,9 +43,4 @@ class ErrorLogTable extends LogTable
     {
         return true;
     }
-
-    public function shouldJoinWithSubSelect()
-    {
-        return true;
-    }
 }
