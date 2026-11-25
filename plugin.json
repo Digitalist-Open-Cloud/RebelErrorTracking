@@ -1,7 +1,7 @@
 {
     "name": "RebelErrorTracking",
     "description": "Track JavaScript errors and other errors the browser can capture on the sites you measure.",
-    "version": "5.1.0",
+    "version": "5.1.1",
     "theme": false,
     "require": {
         "matomo": ">=5.0.0-stable,<6.0.0-b1",
