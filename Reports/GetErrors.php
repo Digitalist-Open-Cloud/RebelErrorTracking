@@ -14,6 +14,7 @@ use Piwik\Piwik;
 use Piwik\Plugin\Report;
 use Piwik\Plugin\ViewDataTable;
 use Piwik\Plugins\RebelErrorTracking\Categories\ErrorsCategory;
+use Piwik\Plugins\RebelErrorTracking\Columns\ErrorMessage;
 use Piwik\Report\ReportWidgetFactory;
 use Piwik\Widget\WidgetsList;
 
@@ -26,6 +27,7 @@ class GetErrors extends Report
         $this->name = Piwik::translate('RebelErrorTracking_Errors');
         $this->documentation = Piwik::translate('RebelErrorTracking_ErrorsReportDocumentation');
         $this->categoryId = ErrorsCategory::ID;
+        $this->dimension = new ErrorMessage();
         $this->subcategoryId = 'General_Overview';
         $this->metrics = ['nb_errors', 'nb_visits'];
         $this->defaultSortColumn = 'nb_errors';

@@ -12,6 +12,7 @@ namespace Piwik\Plugins\RebelErrorTracking\Reports;
 use Piwik\Piwik;
 use Piwik\Plugin\Report;
 use Piwik\Plugin\ViewDataTable;
+use Piwik\Plugins\DevicesDetection\Columns\BrowserVersion;
 use Piwik\Plugins\RebelErrorTracking\Categories\ErrorsCategory;
 
 class GetBrowsers extends Report
@@ -23,6 +24,7 @@ class GetBrowsers extends Report
         $this->name = Piwik::translate('RebelErrorTracking_ErrorsByBrowser');
         $this->documentation = Piwik::translate('RebelErrorTracking_ErrorsByBrowserDocumentation');
         $this->categoryId = ErrorsCategory::ID;
+        $this->dimension = new BrowserVersion();
         $this->subcategoryId = 'General_Overview';
         $this->metrics = ['nb_errors', 'nb_visits'];
         $this->defaultSortColumn = 'nb_errors';
