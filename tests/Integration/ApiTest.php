@@ -189,6 +189,17 @@ class ApiTest extends IntegrationTestCase
         ];
     }
 
+    public function testAnErrorCanBeFollowedOverTime()
+    {
+        $this->addError(1, 10, 'Boom', '10:00:00', '2024-03-04');
+        $this->addError(1, 11, 'Boom', '10:00:00');
+        $this->addError(1, 11, 'Boom', '10:05:00');
+
+        $evolution = \Piwik\Plugins\API\API::getInstance()->getRowEvolution(1, 'day', '2024-03-04,' . self::DAY, 'RebelErrorTracking', 'getErrors', 'Boom');
+
+        $this->assertEquals(2, $evolution['reportData']->getTable(self::DAY)->getFirstRow()->getColumn('nb_errors'));
+    }
+
     private function addError(int $idSite, int $idVisit, string $message, string $time, string $day = self::DAY): void
     {
         $source = 'http://example.org/app.js';

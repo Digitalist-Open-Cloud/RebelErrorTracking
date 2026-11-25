@@ -13,6 +13,7 @@ use Piwik\Piwik;
 use Piwik\Plugin\Report;
 use Piwik\Plugin\ViewDataTable;
 use Piwik\Plugins\RebelErrorTracking\Categories\ErrorsCategory;
+use Piwik\Plugins\RebelErrorTracking\Columns\ErrorPage;
 
 class GetPages extends Report
 {
@@ -23,6 +24,7 @@ class GetPages extends Report
         $this->name = Piwik::translate('RebelErrorTracking_ErrorsByPage');
         $this->documentation = Piwik::translate('RebelErrorTracking_ErrorsByPageDocumentation');
         $this->categoryId = ErrorsCategory::ID;
+        $this->dimension = new ErrorPage();
         $this->subcategoryId = 'General_Overview';
         $this->metrics = ['nb_errors', 'nb_visits'];
         $this->defaultSortColumn = 'nb_errors';

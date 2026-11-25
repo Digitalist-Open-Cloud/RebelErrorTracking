@@ -120,6 +120,28 @@ class TrackingTest extends IntegrationTestCase
         $this->assertSame(['Safari 17.1, Mac 10.15', 'Firefox 120.0, Windows 10'], $occurrences->getColumn('browser'));
     }
 
+    public function testABrowserAndAPageCanBeFollowedOverTime()
+    {
+        $firefox = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0';
+        $this->trackError($this->startVisit(1, '2024-03-04', $firefox), ['ret_m' => 'Boom']);
+        $tracker = $this->startVisit(1, self::DAY, $firefox);
+        $this->trackError($tracker, ['ret_m' => 'Boom']);
+        $this->trackError($tracker, ['ret_m' => 'Bang']);
+
+        $errorsOfTheDay = function (string $report, string $label) {
+            $evolution = \Piwik\Plugins\API\API::getInstance()->getRowEvolution(1, 'day', '2024-03-04,' . self::DAY, 'RebelErrorTracking', $report, $label);
+
+            return $evolution['reportData']->getTable(self::DAY)->getFirstRow()->getColumn('nb_errors');
+        };
+
+        $this->assertEquals(2, $errorsOfTheDay('getBrowsers', 'Firefox 120.0'));
+        $this->assertEquals(2, $errorsOfTheDay('getPages', 'http://example.org/shop'));
+        $this->assertSame(
+            'browserCode==FF;browserVersion==120.0',
+            ErrorsApi::getInstance()->getBrowsers(1, 'day', self::DAY)->getFirstRow()->getMetadata('segment')
+        );
+    }
+
     public function testTheBrowsersOfAnErrorAreSummedOverSeveralDays()
     {
         $firefox = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0';

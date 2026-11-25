@@ -25,6 +25,7 @@
 ### Fixed
 
 - The link from an occurrence to its visit opens Matomo.
+- Row evolution works in the reports "Errors", "Errors by browser" and "Errors by page".
 - A segment on the error message or the error file matches texts with quotes, `<`, `>` and `&`.
 
 ### Security

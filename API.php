@@ -159,6 +159,8 @@ class API extends \Piwik\Plugin\API
         Piwik::checkUserHasViewAccess($idSite);
 
         $table = Archive::createDataTableFromArchive(Errors::BROWSERS, $idSite, $period, $date, $segment);
+        // So that a row can open the visits of its browser.
+        $table->filter('AddSegmentByLabel', [['browserCode', 'browserVersion'], ';']);
         $table->filter('ColumnCallbackAddMetadata', ['label', 'logo', 'Piwik\\Plugins\\DevicesDetection\\getBrowserLogo']);
         $table->filter('ColumnCallbackReplace', ['label', 'Piwik\\Plugins\\DevicesDetection\\getBrowserNameWithVersion']);
 
