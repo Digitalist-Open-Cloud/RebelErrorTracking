@@ -27,6 +27,7 @@
 - The link from an occurrence to its visit opens Matomo.
 - Row evolution works in the reports "Errors", "Errors by browser" and "Errors by page".
 - A segment on the error message or the error file matches texts with quotes, `<`, `>` and `&`.
+- The report "Errors" no longer logs a warning about adding two texts when its totals are worked out. The totals have the earliest and the latest time an error was seen.
 
 ### Security
 
