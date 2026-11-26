@@ -64,6 +64,24 @@ class ApiTest extends IntegrationTestCase
         $this->assertSame('Other error', end($rows)->getColumn('label'));
     }
 
+    public function testTheRowOfTotalsHasTheLatestAndEarliestTimeAndNoTexts()
+    {
+        $this->addError(1, 10, 'Order 12 failed', '10:00:00');
+        $this->addError(1, 11, 'Other error', '12:00:00');
+        $this->addError(1, 11, 'Third error', '09:00:00');
+
+        $totals = \Piwik\API\Request::processRequest('RebelErrorTracking.getErrors', [
+            'idSite' => 1, 'period' => 'day', 'date' => self::DAY, 'keep_totals_row' => 1,
+        ])->getTotalsRow();
+
+        $this->assertEquals(3, $totals->getColumn('nb_errors'));
+        $this->assertSame(self::DAY . ' 12:00:00', $totals->getColumn('last_seen'));
+        $this->assertSame(self::DAY . ' 09:00:00', $totals->getColumn('first_seen'));
+        $this->assertEmpty($totals->getColumn('type'));
+        $this->assertEmpty($totals->getColumn('source'));
+        $this->assertEmpty($totals->getColumn('browsers'));
+    }
+
     public function testOnlyErrorsOfTheWebsiteAndThePeriodAreReported()
     {
         $this->addError(1, 10, 'Today', '10:00:00');

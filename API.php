@@ -119,6 +119,16 @@ class API extends \Piwik\Plugin\API
                     $row->deleteMetadata($name);
                 }
             }
+
+            // For the row of totals: the times and texts of the rows can not be added up.
+            $table->setMetadata(DataTable::COLUMN_AGGREGATION_OPS_METADATA_NAME, [
+                'last_seen' => 'max',
+                'first_seen' => 'min',
+                'is_new' => 'skip',
+                'type' => 'skip',
+                'source' => 'skip',
+                'browsers' => 'skip',
+            ]);
         });
 
         return $table;
